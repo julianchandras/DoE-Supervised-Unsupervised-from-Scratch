@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import mode
 
 class Node():
     """
@@ -6,10 +7,11 @@ class Node():
     https://www.youtube.com/watch?v=mN7i0U4YMqY
     https://www.youtube.com/watch?v=TDkZev5xjfg
     """
-    def __init__(self, X, y, depth):
+    def __init__(self, X, y, depth, max_features):
         self.depth = depth
         self.X = X
         self.y = y
+        self.max_features = max_features
         self.best_feature_index = None
         self.best_threshold = None
         self.left = None
@@ -53,7 +55,8 @@ class Node():
         best_feature_index = None
         best_threshold = None
 
-        for feature_index in range(self.X.shape[1]):
+        selected_features = np.random.choice(self.X.shape[1], self.max_features, replace=False)
+        for feature_index in selected_features:
             sorted_values = np.sort(np.unique(self.X[:, feature_index]))
             thresholds = (sorted_values[:-1] + sorted_values[1:]) / 2
 
@@ -67,9 +70,10 @@ class Node():
         return best_feature_index, best_threshold
 
 class DecisionTreeClassifier():
-    def __init__(self, max_depth=None, min_samples_split=2):
+    def __init__(self, max_depth=None, min_samples_split=2, max_features=None):
         self.max_depth = max_depth
         self.min_samples_split = min_samples_split
+        self.max_features = max_features
         self.classes_ = None
         self.n_classes_ = None
         self.root = None
@@ -77,7 +81,9 @@ class DecisionTreeClassifier():
     def fit(self, X, y):
         self.classes_ = np.unique(y)
         self.n_classes_ = self.classes_.shape[0]
-        self.root = Node(X, y, depth=0)
+        if self.max_features is None:
+            self.max_features = X.shape[1]
+        self.root = Node(X, y, depth=0, max_features=self.max_features)
         self.root.make_split(self.max_depth, self.min_samples_split)
         
     def _predict_single(self, x):
@@ -94,3 +100,31 @@ class DecisionTreeClassifier():
 
     def predict(self, X):
         return np.array([self._predict_single(x) for x in X])
+    
+class RandomForestClassifier():
+    def __init__(self, n_estimators=10, max_depth=None, min_samples_split=2):
+        self.n_estimaors = n_estimators
+        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
+        self.max_features = None
+        self.trees = []
+
+    def fit(self, X, y):
+        self.max_features = np.floor(np.sqrt(X.shape[1]))
+        n_samples = X.shape[0]
+
+        for _ in range(self.n_estimators):
+            indices = np.random.choice(n_samples, n_samples, replace=True)
+            X_sample, y_sample = X[indices], y[indices]
+
+            tree = DecisionTreeClassifier(
+                max_depth=self.max_depth,
+                min_samples_split=self.min_samples_split,
+                max_features=self.max_features
+            )
+            tree.fit(X_sample, y_sample)
+            self.trees.append(tree)
+        
+    def predict(self, X):
+        tree_preds = np.array([tree.predict(X) for tree in self.trees])
+        return np.array([mode(preds).mode[0] for preds in tree_preds.T])
