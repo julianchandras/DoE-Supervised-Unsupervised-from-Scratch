@@ -11,8 +11,7 @@ class LogisticRegression():
         self.classes_ = np.unique(y)
         y_mapped = np.array([np.where(self.classes_ == label)[0][0] for label in y])
 
-
-        self.X = X
+        self.X = np.array(X)
         self.y = y_mapped
 
         self.theta = np.zeros((self.X.shape[1], len(self.classes_)))
@@ -22,11 +21,12 @@ class LogisticRegression():
             self.theta -= self.learning_rate * gradient
 
     def predict(self, X):
+        X = np.array(X)
         Z = X @ self.theta
-        Z = Z - np.max(Z, axis=1, keepdims=True)
+        Z -= np.max(Z, axis=1).reshape(-1, 1)
         e_z = np.exp(Z)
         probs = e_z / np.sum(e_z, axis=1, keepdims=True)
-        
+
         class_indices = np.argmax(probs, axis=1)
         return self.classes_[class_indices]
     
