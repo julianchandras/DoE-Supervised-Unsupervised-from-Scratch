@@ -1,7 +1,11 @@
 import numpy as np
 
 class KNeighborsClassifier():
-    def __init__(self, n_neighbors=5, metric="minkowski", p=None):
+    def __init__(self, n_neighbors=5, metric="euclidean", p=None):
+        self.n_neighbors = n_neighbors
+        self.metric = metric
+        self.p = p
+
         if not isinstance(n_neighbors, int):
             raise TypeError(f"n_neighbors must be an integer, got {type(n_neighbors).__name__} instead.")
 
@@ -11,10 +15,6 @@ class KNeighborsClassifier():
             raise ValueError("when metric='euclidean', p should be None or 2.")
         if metric == "minkowski" and p is None:
             raise ValueError("For metric='minkowski', you must specify a value for p.")
-        
-        self.n_neighbors = n_neighbors
-        self.metric = metric
-        self.p = p
 
     def fit(self, X, y):
         self.X = np.asarray(X)
@@ -33,6 +33,6 @@ class KNeighborsClassifier():
 
         nearest_indices = np.argsort(dist)[:self.n_neighbors]
         nearest_labels = self.y[nearest_indices]
-        prediction = np.bincount(nearest_labels).argmax
+        prediction = np.bincount(nearest_labels).argmax()
         
         return prediction
