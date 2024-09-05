@@ -13,11 +13,13 @@ class GaussianNB():
         self.classes_, class_count_ = np.unique(y, return_counts=True)
         
         # ndarray of shape (n_classes,)
-        self.class_prior_ = class_count_ / y.shape[0]
+        self.class_priors_ = class_count_ / y.shape[0]
 
         # ndarray of shape (n_classes, n_features)
         self.theta_ = np.array([X[y == c].mean(axis=0) for c in self.classes_])
         self.var_ = np.array([X[y == c].var(axis=0) for c in self.classes_])
+
+        self.var_ = np.maximum(self.var_, 1e-9)
 
     def predict(self, X):
         log_priors = np.log(self.class_priors_)
